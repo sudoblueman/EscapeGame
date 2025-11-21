@@ -4,72 +4,93 @@
     <meta charset="UTF-8">
     <title>270梯：成功嶺的極速傳說</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'); /* 引入Press Start 2P字體 */
+        
         body {
-            font-family: '微軟正黑體', 'Arial', sans-serif;
-            background-color: #f0f4f7;
-            color: #333;
+            font-family: 'Press Start 2P', 'Monospace', '微軟正黑體', sans-serif;
+            background-color: #2c3e50; /* 深藍/黑背景，模擬深夜氛圍 */
+            color: #ecf0f1; /* 亮白色文字 */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
         #game-container {
-            width: 90%;
+            width: 95%;
             max-width: 800px;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            background: #1c2833; /* 遊戲視窗背景 */
+            border: 4px solid #3498db; /* 藍色邊框，模擬遊戲機螢幕 */
+            box-shadow: 0 0 20px #3498db;
+            padding: 20px;
+            border-radius: 0; /* 像素風格通常是直角 */
+            line-height: 1.5; /* 增加行距，提高像素字體可讀性 */
         }
         h1 {
-            color: #d9534f;
+            color: #f39c12; /* 黃色標題 */
             text-align: center;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px dashed #3498db;
             padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 1.2em; /* 像素字體不宜過大 */
         }
         #status {
-            background-color: #eef;
-            padding: 15px;
-            border-radius: 5px;
+            background-color: #2980b9; /* 狀態欄背景 */
+            color: #ecf0f1;
+            padding: 10px;
             margin-bottom: 20px;
-            font-size: 1.1em;
+            border: 1px solid #3498db;
+            font-size: 0.8em;
+            line-height: 1.8;
+            /* 讓狀態欄看起來像一個獨立的資訊框 */
         }
         #story {
-            min-height: 100px;
+            min-height: 120px;
             margin-bottom: 20px;
-            line-height: 1.6;
+            font-size: 0.9em;
+            color: #ecf0f1;
         }
         #choices button {
             display: block;
             width: 100%;
             padding: 12px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             border: none;
-            background-color: #5bc0de;
-            color: white;
-            font-size: 1em;
+            background-color: #2ecc71; /* 綠色按鈕 */
+            color: black;
+            font-size: 0.8em;
             cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            border-radius: 0;
+            transition: background-color 0.1s;
+            border-bottom: 3px solid #27ae60; /* 模擬按鈕陰影 */
         }
         #choices button:hover:not(:disabled) {
-            background-color: #31b0d5;
+            background-color: #27ae60;
         }
+        #choices button:active {
+             background-color: #1abc9c;
+             border-bottom: 1px solid #16a085;
+             transform: translateY(2px);
+        }
+        
+        /* 遊戲結果顏色 */
         .fail-text {
-            color: #d9534f;
+            color: #e74c3c; /* 紅色失敗 */
             font-weight: bold;
         }
         .success-text {
-            color: #5cb85c;
+            color: #1abc9c; /* 綠色成功 */
             font-weight: bold;
         }
         .warning-text {
-            color: #f0ad4e;
+            color: #f1c40f; /* 黃色警告 */
         }
         button:disabled {
-            background-color: #ccc;
+            background-color: #7f8c8d;
             cursor: not-allowed;
+            border-bottom: 3px solid #6c7a7b;
+            color: #bdc3c7;
         }
     </style>
 </head>
@@ -77,196 +98,4 @@
     <div id="game-container">
         <h1>270梯：成功嶺的極速傳說</h1>
         <div id="status">
-            時間：<span id="time-display">00:00</span> / 逃亡時限：6小時<br>
-            警覺度：<span id="alert-display">0</span>
-        </div>
-        <div id="story"></div>
-        <div id="choices"></div>
-    </div>
-
-    <script>
-        // 遊戲狀態初始化
-        let state = {
-            time: 0, // 以分鐘計，目標是 360 分鐘 (6 小時)
-            alertLevel: 0, // 警覺度
-            hasKey: false,
-            hasCar: false,
-            escaped: false,
-            gameEnd: false,
-        };
-
-        const MAX_TIME = 360; // 6小時
-        const MAX_ALERT = 100; // 警覺度上限
-
-        const storyDiv = document.getElementById('story');
-        const choicesDiv = document.getElementById('choices');
-        const timeDisplay = document.getElementById('time-display');
-        const alertDisplay = document.getElementById('alert-display');
-
-        // --- 核心遊戲函數 ---
-
-        function updateTime(minutes) {
-            state.time += minutes;
-            const hours = Math.floor(state.time / 60);
-            const mins = state.time % 60;
-            timeDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-            checkGameStatus();
-        }
-
-        function updateAlert(level) {
-            state.alertLevel += level;
-            if (state.alertLevel < 0) state.alertLevel = 0;
-            if (state.alertLevel > MAX_ALERT) state.alertLevel = MAX_ALERT; // 警覺度破表
-            alertDisplay.textContent = state.alertLevel;
-            if (state.alertLevel >= MAX_ALERT && !state.gameEnd) {
-                endGame(false, "警覺度過高！全營區緊急動員，你被營區內巡邏人員當場抓獲。");
-            }
-        }
-
-        function checkGameStatus() {
-            if (state.time >= MAX_TIME && !state.escaped) {
-                endGame(false, "時間到！軍方反應迅速，憲兵隊已在國道佈下天羅地網，你在台中郊區被攔截。");
-            }
-            if (state.escaped && !state.gameEnd) {
-                // 如果成功逃出且時間仍在限制內
-                endGame(true, "你成功了！在軍方大規模搜索前，你已潛入台北住家，躺下並蓋上了被子。勝利條件達成：『開車回家睡大覺』！");
-            }
-        }
-
-        function endGame(success, message) {
-            state.gameEnd = true;
-            storyDiv.innerHTML = `<p class="${success ? 'success-text' : 'fail-text'}">【遊戲結束】${message}</p>`;
-            choicesDiv.innerHTML = '<button onclick="location.reload()">重新開始</button>';
-        }
-
-        function renderScene(scene) {
-            storyDiv.innerHTML = scene.text;
-            choicesDiv.innerHTML = '';
-            scene.choices.forEach(choice => {
-                const button = document.createElement('button');
-                button.textContent = choice.text;
-                button.onclick = () => {
-                    // 執行選項動作
-                    updateTime(choice.timeCost || 0);
-                    updateAlert(choice.alertChange || 0);
-                    choice.action(state);
-                    
-                    // 導向下一場景或結束遊戲
-                    if (choice.nextScene) {
-                        renderScene(scenes[choice.nextScene]);
-                    }
-                };
-                choicesDiv.appendChild(button);
-            });
-            checkGameStatus();
-        }
-
-        // --- 遊戲場景定義 ---
-
-        const scenes = {
-            start: {
-                text: "你是 270 梯替代役男，受不了成功嶺的拘束，你決定執行一個超狂的計畫：偷連長鑰匙，開車回家睡大覺！現在是深夜，你需要連長鑰匙。",
-                choices: [
-                    { text: "趁夜間潛入連長寢室偷竊 (高風險)", timeCost: 5, alertChange: 15, nextScene: 'steal_key', action: () => { } },
-                    { text: "利用連長在辦公室批公文的空檔下手 (中風險)", timeCost: 10, alertChange: 5, nextScene: 'steal_key', action: () => { } }
-                ]
-            },
-            steal_key: {
-                text: "你成功潛入連長室/辦公室。鑰匙就在桌上閃閃發光。你是否要順便多拿一些資源？",
-                choices: [
-                    { 
-                        text: "【僅取鑰匙】立刻閃人，不浪費時間", 
-                        timeCost: 2, alertChange: 0, nextScene: 'drive_to_gate', 
-                        action: (s) => { s.hasKey = true; storyDiv.innerHTML += '<p class="success-text">你取得鑰匙，並鎖定連長座車位置。</p>'; } 
-                    },
-                    { 
-                        text: "【風險投資】順便偷取連長軍服，用於偽裝 (耗時 +10min)", 
-                        timeCost: 10, alertChange: 10, nextScene: 'drive_to_gate', 
-                        action: (s) => { 
-                            s.hasKey = true; 
-                            s.hasUniform = true;
-                            storyDiv.innerHTML += '<p class="warning-text">你額外取得了連長軍服，但多發出了一點聲音，警覺度微幅上升。</p>'; 
-                        } 
-                    }
-                ]
-            },
-            drive_to_gate: {
-                text: "你悄悄發動了連長座車。現在大門衛哨就在眼前，你必須想辦法通過。衛哨兵正用狐疑的眼神看著這輛深夜出營的車。",
-                choices: [
-                    { 
-                        text: "【強力偽裝】大喊『有急事外出！』並模仿連長口氣 (賭上魅力與演技)", 
-                        timeCost: 5, alertChange: -5, nextScene: 'check_gate_pass', 
-                        action: () => {} 
-                    },
-                    { 
-                        text: "【加速衝過】快速通過，不理會衛哨 (衛哨立刻回報上級)", 
-                        timeCost: 1, alertChange: 40, nextScene: 'highway_choice', 
-                        action: () => {} 
-                    }
-                ]
-            },
-            check_gate_pass: {
-                text: "你對衛哨施展了精湛的演技，衛哨經過一陣遲疑...",
-                choices: [
-                    { 
-                        text: "衛哨放行判定 (模擬魅力成功判定)", 
-                        timeCost: 5, alertChange: -10, nextScene: 'highway_choice', 
-                        action: (s) => {
-                            const success = Math.random() < 0.7; // 70% 成功率
-                            if (s.hasUniform) { // 如果有軍服，成功率提高
-                                success = Math.random() < 0.85; 
-                            }
-                            if (success) {
-                                storyDiv.innerHTML += '<p class="success-text">衛哨立正敬禮並放行！你成功離開營區！</p>';
-                            } else {
-                                storyDiv.innerHTML += '<p class="fail-text">衛哨察覺異狀，大喊『停車！』</p>';
-                                endGame(false, "偽裝失敗！你被衛哨鎖定，憲兵隊很快就循線而來。");
-                            }
-                        } 
-                    }
-                ]
-            },
-            highway_choice: {
-                text: "你已成功駛出成功嶺，現在你在台中。距離台北還有很長一段路，軍方隨時可能發動追緝。你必須選擇一條路線。",
-                choices: [
-                    { 
-                        text: "國道一號，全程超速 (最快，但測速臨檢風險高)", 
-                        timeCost: 120, alertChange: 20, nextScene: 'end_game_final', 
-                        action: () => {
-                             storyDiv.innerHTML += '<p class="warning-text">你以極速奔馳。警覺度因超速上升！</p>';
-                        } 
-                    },
-                    { 
-                        text: "國道三號，保持限速行駛 (安全，但耗時較長)", 
-                        timeCost: 180, alertChange: 5, nextScene: 'end_game_final', 
-                        action: () => {
-                             storyDiv.innerHTML += '<p class="success-text">你謹慎地行駛，節省了警覺度。</p>';
-                        } 
-                    }
-                ]
-            },
-             end_game_final: {
-                text: "經過一路狂奔，你終於抵達台北市區。時間只剩下不到 1 小時！你將車輛開到家附近的巷口，並確定沒人跟蹤。",
-                choices: [
-                    { 
-                        text: "衝回家，躺下！ (成功)", 
-                        timeCost: 10, alertChange: 0, nextScene: null, 
-                        action: (s) => { s.escaped = true; } // 觸發 checkGameStatus 判定勝利
-                    },
-                     { 
-                        text: "太累了，先找個地方躲起來 (消耗時間)", 
-                        timeCost: 60, alertChange: 0, nextScene: null, 
-                        action: (s) => { 
-                            storyDiv.innerHTML += '<p class="fail-text">你錯失了最後的機會！時間耗盡，軍方鎖定你最後的位置，憲兵隊抵達。</p>';
-                            s.time = MAX_TIME; // 強制時間耗盡
-                        } 
-                    }
-                ]
-            }
-        };
-
-        // 遊戲開始
-        renderScene(scenes.start);
-    </script>
-</body>
-</html>
+            時間：<span id="time
