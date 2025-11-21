@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>270梯：成功嶺的極速傳說 (最終修訂版)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"> 
+    
+    <style>
+        body {
+            font-family: 'Press Start 2P', 'Monospace', '微軟正黑體', sans-serif;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        #game-container {
+            width: 95%;
+            max-width: 800px;
+            background: #1c2833;
+            border: 4px solid #3498db;
+            box-shadow: 0 0 20px #3498db;
+            padding: 20px;
+            border-radius: 0;
+            line-height: 1.5;
+        }
+        h1 {
+            color: #f39c12;
+            text-align: center;
+            border-bottom: 2px dashed #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        #status {
+            background-color: #2980b9;
+            color: #ecf0f1;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #3498db;
+            font-size: 0.8em;
+            line-height: 1.8;
+        }
+        #story {
+            min-height: 120px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #ecf0f1;
+        }
+        #choices button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: none;
+            background-color: #2ecc71;
+            color: black;
+            font-size: 0.8em;
+            cursor: pointer;
+            border-radius: 0;
+            transition: background-color 0.1s;
+            border-bottom: 3px solid #27ae60;
+        }
+        #choices button:hover:not(:disabled) {
+            background-color: #27ae60;
+        }
+        #choices button:active {
+             background-color: #1abc9c;
+             border-bottom: 1px solid #16a085;
+             transform: translateY(2px);
+        }
+        .attr-input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.8em;
+        }
+        .attr-input-group button {
+            width: 30px;
+            padding: 5px;
+            margin: 0 5px;
+            display: inline-block;
+            box-sizing: border-box;
+            background-color: #f39c12;
+            border-bottom: 3px solid #e67e22;
+        }
+        .attr-input-group button:active {
+            transform: translateY(1px);
+        }
+        .attr-value {
+            width: 20px;
+            text-align: center;
+            display: inline-block;
+            color: #f1c40f;
+        }
+        
+        /* 遊戲結果顏色 */
+        .fail-text {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .success-text {
+            color: #1abc9c;
+            font-weight: bold;
+        }
+        .warning-text {
+            color: #f1c40f;
+        }
+        button:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+            border-bottom: 3px solid #6c7a7b;
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>270梯：成功嶺的極速傳說</h1>
+        <div id="status">
+            時間：<span id="time-display">00:00</span> / 逃亡時限：6小時<br>
+            警覺度：<span id="alert-display">0</span>
+        </div>
+        <div id="story"></div>
+        <div id="choices"></div>
+    </div>
+
+    <script>
+        // --- 遊戲狀態初始化 ---
+        let state = {
+            time: 0, 
+            alertLevel: 0, 
+            hasKey: false,
+            hasCar: false,
+            escaped: false,
+            gameEnd: false,
+            attributes: {
+                INT: 1, 
+                CHA: 1, 
+                MEN: 1, 
+            },
+            pointsToSpend: 5, 
+            hasUniform: false, 
+        };
+
+        const MAX_TIME = 360; 
+        const MAX_ALERT = 100; 
+        const BASE_SUCCESS_RATE = 0.5; 
+        const ATTRIBUTE_FACTOR = 0.05; 
+
+        const storyDiv = document.getElementById('story');
+        const choicesDiv = document.getElementById('choices');
+        const timeDisplay = document.getElementById('time-display');
+        const alertDisplay = document.getElementById('alert-display');
+
+        // --- 核心遊戲函數 ---
+
+        function updateTime(minutes) {
+            state.time += minutes;
+            const hours = Math.floor(state.time / 60);
+            const mins = state.time % 60;
+            timeDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+            checkGameStatus();
+        }
+
+        function updateAlert(level) {
+            state.alertLevel += level;
+            if (state.alertLevel < 0) state.alertLevel = 0;
+            if (state.alertLevel > MAX_ALERT) state.alertLevel = MAX_ALERT; 
+            alertDisplay.textContent = state.alertLevel;
+            if (state.alertLevel >= MAX_ALERT && !state.gameEnd) {
+                endGame(false, "警覺度過高！全營區緊急動員，你被營區內巡邏人員當場抓獲。");
+            }
+        }
+
+        function checkGameStatus() {
+            if (state.time >= MAX_TIME && !state.escaped) {
+                endGame(false, "時間到！軍方反應迅速，憲兵隊已在國道佈下天羅地網，你在台中郊區被攔截。");
+            }
+            if (state.escaped && !state.gameEnd) {
+                endGame(true, "你成功了！在軍方大規模搜索前，你已潛入台北住家，躺下並蓋上了被子。勝利條件達成：『開車回家睡大覺』！");
+            }
+        }
+
+        function endGame(success, message) {
+            state.gameEnd = true;
+            storyDiv.innerHTML = `<p class="${success ? 'success-text' : 'fail-text'}">【遊戲結束】${message}</p>`;
+            choicesDiv.innerHTML = '<button onclick="location.reload()">重新開始</button>';
+        }
+
+        function renderScene(scene) {
+            storyDiv.innerHTML = scene.text;
+            choicesDiv.innerHTML = '';
+            
+            // 檢查是否為 'event_check' 場景，如果是則直接檢查並觸發事件
+            if (scene.id === 'event_check') {
+                checkAndTriggerEvent('highway_choice_next'); 
+                return;
+            }
+
+            scene.choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice.text;
+                button.onclick = () => {
+                    updateTime(choice.timeCost || 0);
+                    updateAlert(choice.alertChange || 0);
+                    
+                    if (choice.attributeCheck) {
+                        // 處理屬性判定
+                        const checkResult = handleAttributeCheck(choice.attributeCheck, choice.nextScene);
+                        if (checkResult.passed) {
+                             storyDiv.innerHTML += `<p class="success-text">判定成功！${checkResult.message}</p>`;
+                             renderScene(scenes[choice.nextScene]);
+                        } else {
+                             storyDiv.innerHTML += `<p class="fail-text">判定失敗！${checkResult.message}</p>`;
+                             if (choice.failScene) {
+                                renderScene(scenes[choice.failScene]);
+                             } else {
+                                endGame(false, "你的行動失敗了。軍方已經反應過來並包圍了你。");
+                             }
+                        }
+                    } else {
+                        // 執行普通動作
+                        if (choice.action) choice.action(state);
+                        
+                        if (choice.nextScene) {
+                            renderScene(scenes[choice.nextScene]);
+                        }
+                    }
+                };
+                choicesDiv.appendChild(button);
+            });
+            checkGameStatus();
+        }
+        
+        // --- 屬性判定邏輯 ---
+        function handleAttributeCheck(checkType, successScene) {
+            let attributeValue;
+            let checkAttributeName;
+            let successRate;
+            let baseRate = BASE_SUCCESS_RATE;
+
+            switch (checkType) {
+                case 'CHA_GATE': // 大門衛哨判定
+                    attributeValue = state.attributes.CHA;
+                    checkAttributeName = '魅力(CHA)';
+                    baseRate = 0.6; 
+                    if (state.hasUniform) baseRate += 0.15; 
+                    break;
+                case 'MEN_CALL': // 連長來電判定
+                    attributeValue = state.attributes.MEN;
+                    checkAttributeName = '心理素質(MEN)';
+                    baseRate = 0.5;
+                    break;
+                case 'INT_AVOID': // 國道臨檢判定
+                    attributeValue = state.attributes.INT;
+                    checkAttributeName = '智力(INT)';
+                    baseRate = 0.4;
+                    break;
+                default:
+                    attributeValue = 1;
+                    checkAttributeName = '一般';
+            }
+
+            successRate = baseRate + (attributeValue * ATTRIBUTE_FACTOR);
+            successRate = Math.min(0.95, successRate); 
+
+            const passed = Math.random() < successRate;
+            
+            const result = {
+                passed: passed,
+                message: `${checkAttributeName}值 ${attributeValue}。成功率 ${Math.round(successRate * 100)}%。`,
+            };
+            
+            return result;
+        }
+
+        // --- 隨機事件邏輯 ---
+        function checkAndTriggerEvent(previousScene) {
+            
+            let event = null;
+            const roll = Math.random();
+
+            if (roll < 0.2) { 
+                event = 'event_commander_call';
+            } else if (roll < 0.45 && state.alertLevel > 30) { 
+                event = 'event_checkpoint';
+            }
+
+            if (event) {
+                renderScene(scenes[event]);
+            } else {
+                renderScene(scenes.highway_choice_next); 
+            }
+        }
+        
+        // --- 遊戲場景定義 ---
+
+        const scenes = {
+            // 0. 屬性分配畫面
+            attribute_setup: {
+                id: 'attribute_setup',
+                text: "【角色建構】您有 <span class='success-text' id='points-to-spend-display'>5</span> 點能力點數可以分配給您的替代役男。請謹慎選擇：",
+                choices: [{ text: "開始逃亡！", nextScene: 'start', action: () => {}, disabled: true }],
+            },
+            
+            // 1. 遊戲開始
+            start: {
+                id: 'start',
+                text: "【行動開始】你是 270 梯替代役男，現在是深夜。你需要連長鑰匙和車輛。",
+                choices: [
+                    { text: "趁夜間潛入連長寢室偷竊", timeCost: 5, alertChange: 15, nextScene: 'steal_key', action: () => { } },
+                    { text: "利用連長在辦公室批公文的空檔下手", timeCost: 10, alertChange: 5, nextScene: 'steal_key', action: () => { } }
+                ]
+            },
+            steal_key: {
+                id: 'steal_key',
+                text: "你成功潛入。鑰匙就在桌上閃閃發光。是否要順便多拿連長軍服，用於偽裝？",
+                choices: [
+                    { 
+                        text: "【僅取鑰匙】立刻閃人 (時間+2min)", 
+                        timeCost: 2, alertChange: 0, nextScene: 'drive_to_gate', 
+                        action: (s) => { s.hasKey = true; storyDiv.innerHTML += '<p class="success-text">取得鑰匙。</p>'; } 
+                    },
+                    { 
+                        text: "【風險投資】偷取連長軍服 (時間+10min，魅力判定加成)", 
+                        timeCost: 10, alertChange: 10, nextScene: 'drive_to_gate', 
+                        action: (s) => { 
+                            s.hasKey = true; 
+                            s.hasUniform = true;
+                            storyDiv.innerHTML += '<p class="warning-text">取得鑰匙和軍服，但警覺度上升。</p>'; 
+                        } 
+                    }
+                ]
+            },
+            drive_to_gate: {
+                id: 'drive_to_gate',
+                text: "你悄悄發動了連長座車。現在大門衛哨就在眼前。衛哨兵正用狐疑的眼神看著這輛深夜出營的車。",
+                choices: [
+                    { 
+                        text: "【強力偽裝】大喊『有急事外出！』 (魅力判定 CHA)", 
+                        timeCost: 5, alertChange: -5, attributeCheck: 'CHA_GATE', nextScene: 'highway_choice', failScene: 'gate_fail',
+                        action: () => {} 
+                    },
+                    { 
+                        text: "【加速衝過】快速通過 (警覺度暴增)", 
+                        timeCost: 1, alertChange: 40, nextScene: 'highway_choice', 
+                        action: () => { storyDiv.innerHTML += '<p class="warning-text">衛哨兵大喊，警報拉響！你成功出營，但警覺度暴增！</p>'; } 
+                    }
+                ]
+            },
+            gate_fail: {
+                id: 'gate_fail',
+                text: "偽裝失敗！衛哨兵察覺異狀，大喊『停車！』並啟動了路障。你被困在大門口。",
+                choices: [
+                    { text: "遊戲結束：被捕", timeCost: 0, alertChange: 0, nextScene: null, action: () => { endGame(false, "你在營區大門口就被捕獲，逃亡計畫徹底失敗。"); } }
+                ]
+            },
+            // 2. 國道選擇
+            highway_choice: {
+                id: 'highway_choice',
+                text: "你已成功駛出成功嶺，現在你在台中。距離台北還有很長一段路。你必須選擇一條路線。",
+                choices: [
+                    { 
+                        text: "國道一號，全程超速 (耗時少 60min，警覺度高)", 
+                        timeCost: 120, alertChange: 20, nextScene: 'event_check', 
+                        action: () => { storyDiv.innerHTML += '<p class="warning-text">你選擇了高速公路，警覺度持續累積中...</p>'; } 
+                    },
+                    { 
+                        text: "國道三號，保持限速行駛 (耗時多 60min，警覺度低)", 
+                        timeCost: 180, alertChange: 5, nextScene: 'event_check', 
+                        action: () => { storyDiv.innerHTML += '<p class="success-text">你選擇了較平穩的路線。</p>'; } 
+                    }
+                ]
+            },
+            
+            // 2.5 逃亡旅程中繼點（用於隨機事件判定）
+            highway_choice_next: {
+                 id: 'highway_choice_next',
+                 text: "在逃亡中途，你感覺時間又過去了一段。你想繼續行駛，面對路途中的風險，還是準備前往台北？",
+                 choices: [
+                    { 
+                        text: "繼續行駛，面對路途中的風險 (再次進入隨機事件判定)", 
+                        timeCost: 60, alertChange: 0, nextScene: 'event_check', 
+                        action: () => {} 
+                    },
+                    { 
+                        text: "台北已近，試圖進入終點", 
+                        timeCost: 0, alertChange: 0, nextScene: 'end_game_final', 
+                        action: () => {}
+                    }
+                ]
+            },
+            
+            // 3. 隨機事件檢查點
+            event_check: {
+                id: 'event_check',
+                text: "系統正在檢查路況和軍方追緝情況...", 
+                choices: [] 
+            },
+            
+            // 4. 隨機事件
+            event_commander_call: {
+                id: 'event_commander_call',
+                text: "<p class='fail-text'>【突發事件】你的手機響了！是連長來電！你瞬間出汗，無法無視它。</p>你必須快速應對：",
+                choices: [
+                    { 
+                        text: "立即掛斷並關機 (心理素質判定 MEN)", 
+                        timeCost: 5, alertChange: 10, attributeCheck: 'MEN_CALL', nextScene: 'highway_choice_next', failScene: 'event_fail_call',
+                        action: () => {}
+                    },
+                    { 
+                        text: "接聽，假裝是連長本人 (極高風險)", 
+                        timeCost: 2, alertChange: 40, nextScene: null, 
+                        action: () => { 
+                            endGame(false, "你接通了電話並試圖模仿聲音，但連長立刻識破了！你在國道上被鎖定位置，遊戲結束。");
+                        } 
+                    }
+                ]
+            },
+            event_fail_call: {
+                id: 'event_fail_call',
+                text: "你掛斷電話時發出巨大聲響，手忙腳亂間撞到了路邊的護欄！雖然車子還能開，但劇烈的搖晃讓你精神瀕臨崩潰。",
+                choices: [
+                    { 
+                        text: "繼續逃亡 (警覺度+20)", 
+                        timeCost: 30, alertChange: 20, nextScene: 'highway_choice_next', 
+                        action: () => {}
+                    }
+                ]
+            },
+            event_checkpoint: {
+                id: 'event_checkpoint',
+                text: "<p class='warning-text'>【突發事件】國道前方出現**憲兵臨檢點**！大量憲兵在引導車輛靠邊，你必須想辦法避免被攔下！</p>",
+                choices: [
+                    { 
+                        text: "緊急變道，從交流道衝出 (智力判定 INT)", 
+                        timeCost: 10, alertChange: 15, attributeCheck: 'INT_AVOID', nextScene: 'highway_choice_next', failScene: 'event_fail_checkpoint',
+                        action: () => {}
+                    },
+                    { 
+                        text: "減速通過，假裝沒事 (極高風險，魅力判定 CHA)", 
+                        timeCost: 5, alertChange: 30, attributeCheck: 'CHA_GATE', nextScene: 'highway_choice_next', failScene: 'event_fail_checkpoint',
+                        action: () => {}
+                    }
+                ]
+            },
+            event_fail_checkpoint: {
+                id: 'event_fail_checkpoint',
+                text: "憲兵的鷹眼早已鎖定你這輛可疑的連長座車。你被指揮靠邊停下！",
+                choices: [
+                    { text: "遊戲結束：被捕", timeCost: 0, alertChange: 0, nextScene: null, action: () => { endGame(false, "你在國道臨檢點被憲兵當場捕獲，超狂計畫失敗。"); } }
+                ]
+            },
+            
+            // 5. 遊戲終點
+            end_game_final: {
+                id: 'end_game_final',
+                text: "經過一路狂奔，你終於抵達台北市區。你將車輛開到家附近的巷口，確定沒人跟蹤。",
+                choices: [
+                    { 
+                        text: "衝回家，躺下！ (勝利)", 
+                        timeCost: 10, alertChange: 0, nextScene: null, 
+                        action: (s) => { s.escaped = true; } 
+                    },
+                     { 
+                        text: "太累了，先找個地方躲起來 (消耗時間，可能導致失敗)", 
+                        timeCost: 60, alertChange: 0, nextScene: null, 
+                        action: (s) => { 
+                            storyDiv.innerHTML += '<p class="fail-text">你錯失了最後的機會！時間耗盡，軍方鎖定你最後的位置，憲兵隊抵達。</p>';
+                            s.time = MAX_TIME; 
+                        } 
+                    }
+                ]
+            }
+        };
+
+        // --- 屬性分配功能初始化 ---
+        function setupAttributeAllocation() {
+            const attrKeys = Object.keys(state.attributes);
+            let attrHtml = "";
+            
+            // 渲染屬性分配控制項
+            attrKeys.forEach(key => {
+                attrHtml += `
+                    <div class="attr-input-group">
+                        <span>${key === 'INT' ? '智力 (INT)' : key === 'CHA' ? '魅力 (CHA)' : '心理素質 (MEN)'}</span>
+                        <div>
+                            <button type="button" onclick="changeAttribute('${key}', -1)" id="minus-${key}" disabled>-</button>
+                            <span class="attr-value" id="attr-val-${key}">${state.attributes[key]}</span>
+                            <button type="button" onclick="changeAttribute('${key}', 1)" id="plus-${key}">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 渲染場景文字和屬性控制項
+            storyDiv.innerHTML = scenes.attribute_setup.text.replace('5', `<span class='success-text' id='points-to-spend-display'>${state.pointsToSpend}</span>`);
+            choicesDiv.innerHTML = attrHtml; // 清空並設定屬性控制項
+
+            // 渲染「開始遊戲」按鈕
+            const startButton = document.createElement('button');
+            startButton.id = 'start-game-button';
+            startButton.textContent = scenes.attribute_setup.choices[0].text;
+            startButton.disabled = state.pointsToSpend > 0;
+            startButton.onclick = () => renderScene(scenes.start);
+            choicesDiv.appendChild(startButton); // 將按鈕添加到 choicesDiv
+        }
+
+        window.changeAttribute = function(attr, delta) {
+            const currentVal = state.attributes[attr];
+            
+            if (delta > 0) {
+                if (state.pointsToSpend > 0) {
+                    state.attributes[attr]++;
+                    state.pointsToSpend--;
+                }
+            } else { // delta < 0
+                if (currentVal > 1) { // 最低值為 1
+                    state.attributes[attr]--;
+                    state.pointsToSpend++;
+                }
+            }
+            
+            document.getElementById(`attr-val-${attr}`).textContent = state.attributes[attr];
+            document.getElementById('points-to-spend-display').textContent = state.pointsToSpend;
+            
+            // 更新按鈕狀態
+            Object.keys(state.attributes).forEach(key => {
+                document.getElementById(`plus-${key}`).disabled = state.pointsToSpend === 0;
+                document.getElementById(`minus-${key}`).disabled = state.attributes[key] === 1;
+            });
+            
+            document.getElementById('start-game-button').disabled = state.pointsToSpend > 0;
+        }
+
+        // 遊戲開始的入口點
+        setupAttributeAllocation();
+    </script>
+</body>
+</html>
