@@ -2,10 +2,11 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>270梯：成功嶺的極速傳說 (最終修訂版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>270梯：成功嶺的極速傳說 (手機優化版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"> 
     
     <style>
+        /* --- 基礎樣式 (適用所有螢幕) --- */
         body {
             font-family: 'Press Start 2P', 'Monospace', '微軟正黑體', sans-serif;
             background-color: #2c3e50;
@@ -15,17 +16,18 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* 增加邊緣間距 */
         }
         #game-container {
-            width: 95%;
-            max-width: 800px;
+            width: 100%; /* 佔滿可用寬度 */
+            max-width: 800px; 
             background: #1c2833;
             border: 4px solid #3498db;
             box-shadow: 0 0 20px #3498db;
             padding: 20px;
             border-radius: 0;
-            line-height: 1.5;
+            line-height: 1.6; /* 增加行高，提升閱讀性 */
+            box-sizing: border-box;
         }
         h1 {
             color: #f39c12;
@@ -38,31 +40,35 @@
         #status {
             background-color: #2980b9;
             color: #ecf0f1;
-            padding: 10px;
+            padding: 15px; /* 增加狀態欄高度 */
             margin-bottom: 20px;
             border: 1px solid #3498db;
-            font-size: 0.8em;
+            font-size: 0.9em;
             line-height: 1.8;
         }
         #story {
-            min-height: 120px;
+            min-height: 100px;
             margin-bottom: 20px;
-            font-size: 0.9em;
+            font-size: 1em; /* 故事文字放大 */
             color: #ecf0f1;
+            /* 讓像素字體在長文時可降級 */
+            font-family: 'Press Start 2P', '微軟正黑體', sans-serif;
+            word-break: break-word; /* 防止長單詞溢出 */
         }
         #choices button {
             display: block;
             width: 100%;
-            padding: 12px;
-            margin-bottom: 8px;
+            padding: 15px 10px; /* 增加點擊區域 */
+            margin-bottom: 10px;
             border: none;
             background-color: #2ecc71;
             color: black;
-            font-size: 0.8em;
+            font-size: 0.9em; 
             cursor: pointer;
             border-radius: 0;
             transition: background-color 0.1s;
-            border-bottom: 3px solid #27ae60;
+            border-bottom: 4px solid #27ae60; /* 加粗底部陰影 */
+            box-sizing: border-box;
         }
         #choices button:hover:not(:disabled) {
             background-color: #27ae60;
@@ -70,51 +76,80 @@
         #choices button:active {
              background-color: #1abc9c;
              border-bottom: 1px solid #16a085;
-             transform: translateY(2px);
+             transform: translateY(3px); /* 增加按壓感 */
         }
+        
+        /* --- 屬性分配區樣式優化 --- */
         .attr-input-group {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            font-size: 0.8em;
+            margin-bottom: 15px; /* 增加間距 */
+            font-size: 0.9em;
+            padding: 5px 0;
+        }
+        .attr-input-group > div {
+             min-width: 120px; /* 確保按鈕和值有足夠空間 */
+             text-align: right;
         }
         .attr-input-group button {
-            width: 30px;
-            padding: 5px;
-            margin: 0 5px;
-            display: inline-block;
+            width: 35px; /* 放大按鈕 */
+            height: 35px;
+            padding: 0;
+            margin: 0 8px; /* 增加按鈕間距 */
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
             box-sizing: border-box;
             background-color: #f39c12;
             border-bottom: 3px solid #e67e22;
-        }
-        .attr-input-group button:active {
-            transform: translateY(1px);
+            font-size: 1.2em; /* 放大按鈕符號 */
+            border-radius: 3px;
         }
         .attr-value {
-            width: 20px;
+            width: 30px; 
             text-align: center;
             display: inline-block;
             color: #f1c40f;
+            font-size: 1.1em;
         }
         
-        /* 遊戲結果顏色 */
-        .fail-text {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        .success-text {
-            color: #1abc9c;
-            font-weight: bold;
-        }
-        .warning-text {
-            color: #f1c40f;
-        }
+        /* 遊戲結果顏色 (保持不變) */
+        .fail-text { color: #e74c3c; font-weight: bold; }
+        .success-text { color: #1abc9c; font-weight: bold; }
+        .warning-text { color: #f1c40f; }
         button:disabled {
             background-color: #7f8c8d;
             cursor: not-allowed;
-            border-bottom: 3px solid #6c7a7b;
+            border-bottom: 4px solid #6c7a7b;
             color: #bdc3c7;
+        }
+
+        /* --- 手機螢幕優化 (寬度小於 600px) --- */
+        @media screen and (max-width: 600px) {
+             body {
+                padding: 5px;
+             }
+             #game-container {
+                 padding: 15px;
+             }
+             h1 {
+                 font-size: 1em; /* 標題略微縮小 */
+             }
+             #story {
+                 font-size: 0.9em; /* 內容字體微調 */
+             }
+             #status {
+                 font-size: 0.8em;
+             }
+             #choices button {
+                 padding: 12px 10px; /* 按鈕高度微調 */
+                 font-size: 0.9em;
+             }
+             /* 屬性調整按鈕在手機上保持放大，以利點擊 */
+             .attr-input-group {
+                 font-size: 0.9em;
+             }
         }
     </style>
 </head>
@@ -152,6 +187,7 @@
         const BASE_SUCCESS_RATE = 0.5; 
         const ATTRIBUTE_FACTOR = 0.05; 
 
+        // 在 DOMContentLoaded 事件中取得元素，確保它們已存在
         const storyDiv = document.getElementById('story');
         const choicesDiv = document.getElementById('choices');
         const timeDisplay = document.getElementById('time-display');
@@ -196,7 +232,6 @@
             storyDiv.innerHTML = scene.text;
             choicesDiv.innerHTML = '';
             
-            // 檢查是否為 'event_check' 場景，如果是則直接檢查並觸發事件
             if (scene.id === 'event_check') {
                 checkAndTriggerEvent('highway_choice_next'); 
                 return;
@@ -210,7 +245,6 @@
                     updateAlert(choice.alertChange || 0);
                     
                     if (choice.attributeCheck) {
-                        // 處理屬性判定
                         const checkResult = handleAttributeCheck(choice.attributeCheck, choice.nextScene);
                         if (checkResult.passed) {
                              storyDiv.innerHTML += `<p class="success-text">判定成功！${checkResult.message}</p>`;
@@ -224,7 +258,6 @@
                              }
                         }
                     } else {
-                        // 執行普通動作
                         if (choice.action) choice.action(state);
                         
                         if (choice.nextScene) {
@@ -237,7 +270,7 @@
             checkGameStatus();
         }
         
-        // --- 屬性判定邏輯 ---
+        // --- 屬性判定邏輯 (保持不變) ---
         function handleAttributeCheck(checkType, successScene) {
             let attributeValue;
             let checkAttributeName;
@@ -245,18 +278,18 @@
             let baseRate = BASE_SUCCESS_RATE;
 
             switch (checkType) {
-                case 'CHA_GATE': // 大門衛哨判定
+                case 'CHA_GATE': 
                     attributeValue = state.attributes.CHA;
                     checkAttributeName = '魅力(CHA)';
                     baseRate = 0.6; 
                     if (state.hasUniform) baseRate += 0.15; 
                     break;
-                case 'MEN_CALL': // 連長來電判定
+                case 'MEN_CALL': 
                     attributeValue = state.attributes.MEN;
                     checkAttributeName = '心理素質(MEN)';
                     baseRate = 0.5;
                     break;
-                case 'INT_AVOID': // 國道臨檢判定
+                case 'INT_AVOID': 
                     attributeValue = state.attributes.INT;
                     checkAttributeName = '智力(INT)';
                     baseRate = 0.4;
@@ -279,7 +312,7 @@
             return result;
         }
 
-        // --- 隨機事件邏輯 ---
+        // --- 隨機事件邏輯 (保持不變) ---
         function checkAndTriggerEvent(previousScene) {
             
             let event = null;
@@ -298,17 +331,14 @@
             }
         }
         
-        // --- 遊戲場景定義 ---
+        // --- 遊戲場景定義 (保持不變) ---
 
         const scenes = {
-            // 0. 屬性分配畫面
             attribute_setup: {
                 id: 'attribute_setup',
                 text: "【角色建構】您有 <span class='success-text' id='points-to-spend-display'>5</span> 點能力點數可以分配給您的替代役男。請謹慎選擇：",
                 choices: [{ text: "開始逃亡！", nextScene: 'start', action: () => {}, disabled: true }],
             },
-            
-            // 1. 遊戲開始
             start: {
                 id: 'start',
                 text: "【行動開始】你是 270 梯替代役男，現在是深夜。你需要連長鑰匙和車輛。",
@@ -360,7 +390,6 @@
                     { text: "遊戲結束：被捕", timeCost: 0, alertChange: 0, nextScene: null, action: () => { endGame(false, "你在營區大門口就被捕獲，逃亡計畫徹底失敗。"); } }
                 ]
             },
-            // 2. 國道選擇
             highway_choice: {
                 id: 'highway_choice',
                 text: "你已成功駛出成功嶺，現在你在台中。距離台北還有很長一段路。你必須選擇一條路線。",
@@ -377,8 +406,6 @@
                     }
                 ]
             },
-            
-            // 2.5 逃亡旅程中繼點（用於隨機事件判定）
             highway_choice_next: {
                  id: 'highway_choice_next',
                  text: "在逃亡中途，你感覺時間又過去了一段。你想繼續行駛，面對路途中的風險，還是準備前往台北？",
@@ -395,15 +422,11 @@
                     }
                 ]
             },
-            
-            // 3. 隨機事件檢查點
             event_check: {
                 id: 'event_check',
                 text: "系統正在檢查路況和軍方追緝情況...", 
                 choices: [] 
             },
-            
-            // 4. 隨機事件
             event_commander_call: {
                 id: 'event_commander_call',
                 text: "<p class='fail-text'>【突發事件】你的手機響了！是連長來電！你瞬間出汗，無法無視它。</p>你必須快速應對：",
@@ -456,8 +479,6 @@
                     { text: "遊戲結束：被捕", timeCost: 0, alertChange: 0, nextScene: null, action: () => { endGame(false, "你在國道臨檢點被憲兵當場捕獲，超狂計畫失敗。"); } }
                 ]
             },
-            
-            // 5. 遊戲終點
             end_game_final: {
                 id: 'end_game_final',
                 text: "經過一路狂奔，你終於抵達台北市區。你將車輛開到家附近的巷口，確定沒人跟蹤。",
@@ -479,36 +500,37 @@
             }
         };
 
-        // --- 屬性分配功能初始化 ---
+        // --- 屬性分配功能初始化 (程式碼與上版保持一致，專注於佈局優化) ---
         function setupAttributeAllocation() {
             const attrKeys = Object.keys(state.attributes);
-            let attrHtml = "";
             
-            // 渲染屬性分配控制項
+            storyDiv.innerHTML = scenes.attribute_setup.text.replace('5', `<span class='success-text' id='points-to-spend-display'>${state.pointsToSpend}</span>`);
+            
+            choicesDiv.innerHTML = '';
+            
             attrKeys.forEach(key => {
-                attrHtml += `
-                    <div class="attr-input-group">
-                        <span>${key === 'INT' ? '智力 (INT)' : key === 'CHA' ? '魅力 (CHA)' : '心理素質 (MEN)'}</span>
-                        <div>
-                            <button type="button" onclick="changeAttribute('${key}', -1)" id="minus-${key}" disabled>-</button>
-                            <span class="attr-value" id="attr-val-${key}">${state.attributes[key]}</span>
-                            <button type="button" onclick="changeAttribute('${key}', 1)" id="plus-${key}">+</button>
-                        </div>
+                const attrGroup = document.createElement('div');
+                attrGroup.className = 'attr-input-group';
+                
+                let label = key === 'INT' ? '智力 (INT)' : key === 'CHA' ? '魅力 (CHA)' : '心理素質 (MEN)';
+                
+                attrGroup.innerHTML = `
+                    <span>${label}</span>
+                    <div>
+                        <button type="button" onclick="changeAttribute('${key}', -1)" id="minus-${key}" disabled>-</button>
+                        <span class="attr-value" id="attr-val-${key}">${state.attributes[key]}</span>
+                        <button type="button" onclick="changeAttribute('${key}', 1)" id="plus-${key}">+</button>
                     </div>
                 `;
+                choicesDiv.appendChild(attrGroup);
             });
             
-            // 渲染場景文字和屬性控制項
-            storyDiv.innerHTML = scenes.attribute_setup.text.replace('5', `<span class='success-text' id='points-to-spend-display'>${state.pointsToSpend}</span>`);
-            choicesDiv.innerHTML = attrHtml; // 清空並設定屬性控制項
-
-            // 渲染「開始遊戲」按鈕
             const startButton = document.createElement('button');
             startButton.id = 'start-game-button';
             startButton.textContent = scenes.attribute_setup.choices[0].text;
             startButton.disabled = state.pointsToSpend > 0;
             startButton.onclick = () => renderScene(scenes.start);
-            choicesDiv.appendChild(startButton); // 將按鈕添加到 choicesDiv
+            choicesDiv.appendChild(startButton); 
         }
 
         window.changeAttribute = function(attr, delta) {
@@ -519,27 +541,41 @@
                     state.attributes[attr]++;
                     state.pointsToSpend--;
                 }
-            } else { // delta < 0
-                if (currentVal > 1) { // 最低值為 1
+            } else { 
+                if (currentVal > 1) { 
                     state.attributes[attr]--;
                     state.pointsToSpend++;
                 }
             }
             
-            document.getElementById(`attr-val-${attr}`).textContent = state.attributes[attr];
-            document.getElementById('points-to-spend-display').textContent = state.pointsToSpend;
+            const pointsDisplay = document.getElementById('points-to-spend-display');
+            const attrValDisplay = document.getElementById(`attr-val-${attr}`);
+            const startButton = document.getElementById('start-game-button');
             
-            // 更新按鈕狀態
+            if (attrValDisplay) attrValDisplay.textContent = state.attributes[attr];
+            if (pointsDisplay) pointsDisplay.textContent = state.pointsToSpend;
+            
             Object.keys(state.attributes).forEach(key => {
-                document.getElementById(`plus-${key}`).disabled = state.pointsToSpend === 0;
-                document.getElementById(`minus-${key}`).disabled = state.attributes[key] === 1;
+                const plusBtn = document.getElementById(`plus-${key}`);
+                const minusBtn = document.getElementById(`minus-${key}`);
+                
+                if (plusBtn) plusBtn.disabled = state.pointsToSpend === 0;
+                if (minusBtn) minusBtn.disabled = state.attributes[key] === 1;
             });
             
-            document.getElementById('start-game-button').disabled = state.pointsToSpend > 0;
+            if (startButton) startButton.disabled = state.pointsToSpend > 0;
         }
 
-        // 遊戲開始的入口點
-        setupAttributeAllocation();
+        // 遊戲開始的入口點：確保在 DOM 載入完成後才執行 setupAttributeAllocation
+        document.addEventListener('DOMContentLoaded', () => {
+             // 再次檢查元素，並啟動遊戲
+             if (storyDiv && choicesDiv && timeDisplay && alertDisplay) {
+                 setupAttributeAllocation();
+             } else {
+                 console.error("Critical Error: One or more game elements were not found.");
+             }
+        });
     </script>
 </body>
 </html>
+
